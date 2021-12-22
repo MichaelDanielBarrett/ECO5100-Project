@@ -1,0 +1,66 @@
+#
+#   Introduction to Econometrics
+#
+#   Final Project
+#
+#   Due Tuesday, August 2, 2017
+#
+#   Code Written by Michael Barrett
+#
+###################################################################
+#
+# Start with a clean slate!
+closeAllConnections()
+rm(list = ls())
+#
+#   Estimating Keynesian Consumption Function
+#
+# Load .csv
+cons <- read.csv("W:/2017 Spring-Summer/Introduction to Statistics and Econometrics/Final Project/Source Data/cons.csv")
+# Make the regression
+cons_HAT <- lm(C ~ Yd, data = cons)
+# Look at the summary
+summary(cons_HAT)
+# Make a plot with the fitted line
+plot(x = cons$Yd, y = cons$C)
+abline(cons_HAT)
+#
+#   Estimating Cobb-Douglas Function
+#
+# Load .csv
+cobb.douglas <- read.csv("W:/2017 Spring-Summer/Introduction to Statistics and Econometrics/Final Project/Source Data/cobb-douglas.csv")
+# Make the regression
+Y_HAT <- lm(log(GDP) ~ log(Labor) + log(Capital), data = cobb.douglas)
+# Look at the summary
+summary(Y_HAT)
+# Find exp(log(A))
+exp(Y_HAT$coefficients[1])
+#
+#   Determinants of Cross Country GDP Growth Rates
+#
+#  Load .csv
+growth <- read.csv("W:/2017 Spring-Summer/Introduction to Statistics and Econometrics/Final Project/Source Data/growth.csv")
+# Make the regression
+GDPgrowth_HAT <- lm(GDPgrowth ~ initGDP + MSE + FSE + MHE + FHE + life_exp + eduGDP + invGDP + govGDP + pol, data = growth)
+# Look at the summary
+summary(GDPgrowth_HAT)
+# Create a list for variables
+variables <- list()
+variables[[1]] <- variable.names(GDPgrowth_HAT)[2:GDPgrowth_HAT$rank]
+# Number of variables will be useful to have on-hand
+k <- GDPgrowth_HAT$rank - 1
+# Make a blank list to store info for models with fewer variables
+model_info <- list()
+# This algorithm will create models omitting the variable with the highest p-value from the next model
+for (i in 1:k) {
+    # Write the model out from the given variables
+    model_info$trial_model[i] <- paste("growth$GDPgrowth ~ ", paste("growth$", variables[[i]], sep = "", collapse = " + "), sep = "")
+    # Estimate values for the model
+    GDPgrowth_HAT_trial <- lm(as.formula(model_info$trial_model[i]))
+    # Store the adjusted R^2
+    model_info$adj_R_sq[i] <- summary(GDPgrowth_HAT_trial)$adj.r.squared
+    # Omit the variable with the highest p-value from the next model
+    variables[[i + 1]] <- variables[[i]][-(which.max(summary(GDPgrowth_HAT_trial)$coefficients[2:(k-i+2), 4]))]
+}
+# Find the highest adjusted R^2
+best_r <- which.max(model_info$adj_R_sq)
